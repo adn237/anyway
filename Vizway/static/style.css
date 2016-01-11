@@ -1,0 +1,192 @@
+/* style.css
+ * This file provides css styles.
+ */
+body, html {
+	background-color: #FFFFFF;
+	width: 100%;
+	height: 100%;
+	margin: 0 auto;
+    padding: 0;
+	font-family: "Alef";
+	color: #000000;
+	direction: rtl;
+}
+
+#header {
+    text-align: right;
+}
+
+#map_canvas {
+    height: 100%;
+}
+
+#details {
+    margin: auto;
+    height: 100%;
+    width: 40%;
+    padding: auto;
+    display: none;
+    text-align: center;
+}
+
+#severities {
+    float: left;
+    text-align: center;
+    padding: 45px;
+    height: 50%;
+    width: 30%;
+}
+
+#severities-chart {
+    float: right;
+    width: 27%;
+}
+
+#chart-light {
+    border: 1px solid #FFFFFF;
+	background-color: #FEB700;
+    position: relative;
+    transform: translate(50%, 20%);
+    z-index: 1;
+}
+
+#chart-severe {
+    border: 1px solid #FFFFFF;
+	background-color: #FC5200;
+    position: relative;
+    transform: translate(50%, 25%);
+    z-index: 2;
+}
+
+#involved {
+    display: none;
+    background-color: #F1EFE8;
+    margin: auto;
+    height: 100%;
+    width: 100%;
+    padding: auto;
+    text-align: center;
+}
+
+#timeline-comparison {
+    display: none;
+    margin: auto;
+    height: 100%;
+    width: 100%;
+    padding: auto;
+    text-align: center;
+}
+
+.separator {
+    height: 45px;
+}
+
+a {
+	text-decoration: none;
+	color: #000000;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+.logo {
+	padding-top: 10%;
+	display: block;
+	margin: 0 auto;
+	padding-bottom: 2em;
+	max-width: 200px;
+}
+
+.legend {
+	max-width: 30px;
+}
+
+.side-icon {
+	padding-top: 10%;
+	display: block;
+	margin: auto 0;
+	padding-bottom: 2em;
+	max-width: 200px;
+}
+
+.plot {
+	display: block;
+	margin: auto;
+	padding-bottom: 2em;
+	max-width: 80%;
+}
+
+h1 {
+	font-weight: bold;
+	font-size: 2em;
+}
+
+.message {
+	padding-left: 50px;
+	padding-right: 50px;
+	font-size: 21pt;
+}
+
+.message-tight {
+    margin: 0px;
+	padding-left: 50px;
+	padding-right: 50px;
+	font-size: 21pt;
+}
+
+.description {
+	padding-left: 50px;
+	padding-right: 50px;
+	font-size: 18pt;
+}
+
+.description-tight {
+    margin: 0px;
+	padding-left: 50px;
+	padding-right: 50px;
+	font-size: 18pt;
+}
+
+.number {
+    margin: 10px;
+	font-size: 48pt;
+}
+
+.number-tight {
+    margin: 0px;
+	font-size: 48pt;
+}
+
+.number-small {
+    margin: 0px;
+	font-size: 20pt;
+}
+
+table {
+	table-layout: fixed;
+	width: 800px;
+	margin: 0 auto;
+	word-wrap: break-word;
+	padding-top: 10%;
+}
+
+th {
+	border-bottom: 1px solid #000;
+}
+
+th, td {
+	text-align: left;
+	padding: 2px 20px;
+}
+
+.env-var {
+	text-align: right;
+	border-right: 1px solid #000;
+	width: 30%;
+}
+
+pre {
+	padding: 0;
+	margin: 0;
+}
