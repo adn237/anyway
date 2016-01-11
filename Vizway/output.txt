@@ -1,4 +1,0 @@
-.
-./sort
-./output.txt
-./errors.txt
