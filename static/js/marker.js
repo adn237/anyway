@@ -34,16 +34,17 @@ var MarkerView = Backbone.View.extend({
             return this;
         }
 
+        this.marker.setIcon(this.getIcon());
+        this.marker.setMap(this.map);
+        this.marker.view = this;
+
         if (this.model.get("type") == MARKER_TYPE_DISCUSSION) {
-            this.marker.setIcon(this.getIcon());
             this.marker.setTitle(this.getTitle('discussion')); //this.model.get("title"));
             google.maps.event.addListener(this.marker, "click",
                 _.bind(app.showDiscussion, app, this.model.get("identifier")) );
             return this;
         }
 
-        this.marker.setIcon(this.getIcon());
-        this.marker.setMap(this.map);
         this.marker.setTitle(this.getTitle('single'));
 
         if (this.model.get("provider_code") == PROVIDER_CODE_UNITED_HATZALA) {
@@ -107,15 +108,12 @@ var MarkerView = Backbone.View.extend({
                 provider.url + "\' target=\'_blank\'>" + provider.name + "</a>");
         }
 
-
-        this.marker.view = this;
-
         app.oms.addMarker(this.marker);
 
         return this;
     },
     getIcon : function() {
-        return markerIcon = {
+        return {
             path: google.maps.SymbolPath.CIRCLE,
             scale: 0,
             fillColor: 'black'
@@ -150,7 +148,7 @@ var MarkerView = Backbone.View.extend({
                 break;
             case 'multiple':
                 accuracy = (this.marker.opacity != 1);
-                markerTitle = 'מספר תאונות בנקודה זו' ;
+                markerTitle = 'מספר תאונות בנקודה זו';
                 break;
             case 'discussion':
                 markerTitle = 'דיון';
@@ -167,7 +165,7 @@ var MarkerView = Backbone.View.extend({
         }
     },
     choose : function() {
-        if (app.oms.markersNearMarker(this.marker).length) {
+        if (this.model.get("groupID") && !this.model.get("currentlySpiderfied")) {
             new google.maps.event.trigger(this.marker, "click");
         }
         new google.maps.event.trigger(this.marker, "click");
@@ -274,7 +272,7 @@ var MarkerView = Backbone.View.extend({
     accordionInputClick : function(e) {
         var input = e.currentTarget;
         if (input.checked){
-            var infoWindow = $(input).parents(".marker-info-window");
+            var infoWindow = $(input).parents(".gm-style-iw > div");
             var labelTop = $(input).siblings("label").offset().top;
             var infoWindowPos = infoWindow.offset().top;
             var IwHalfHeight = infoWindow.height() / 2;
@@ -300,5 +298,23 @@ var MarkerView = Backbone.View.extend({
                 }.bind(this),550);
             }
         }
+    },
+    select : function(){
+        //unselect all previous selections
+        _.each(app.markerList, function(markerView){
+            markerView.unselect();
+        });
+        //if marker is currently shown
+        this.marker.setTitle(this.marker.getTitle() + SELECTED_MARKER);
+    },
+    unselect : function(){
+        //if was selected and currently displayed as single icon
+        if(this.isSelected()){
+            this.marker.setTitle(this.marker.getTitle().replace(SELECTED_MARKER, ""));
+        }
+    },
+    isSelected : function(){
+        //if shown and selected
+        return this.marker.getTitle().search(SELECTED_MARKER) != -1;
     },
 });

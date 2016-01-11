@@ -254,20 +254,33 @@ $(function () {
                 marker.view.model.unset("groupID");
             });
 
+            //make single icons for those who are no longer in a group
+            _.each(this.markerList, function(markerView){
+                var marker = markerView.marker;
+                if(this.map.getBounds().contains(marker.getPosition())){
+                    if(!this.oms.markersNearMarker(marker,true).length){
+                        marker.setTitle(markerView.getTitle("single"));
+                    }
+                }
+            },this);
+
             _.each(this.oms.markersNearAnyOtherMarker(), function (marker) {
-                // hide markers using markers.css
-                marker.title = '';
-                var groupHead = marker.view.model;
-                if (!groupHead.get("groupID")) {
-                    groupHead.set("groupID", groupID);
-                    var groupHeadSeverity = groupHead.get('severity');
-                    var groupsHeadOpacity = groupHead.get("locationAccuracy") == 1 ? 'opaque' : 1;
-                    groupsData.push({severity: groupHeadSeverity, opacity: groupsHeadOpacity});
+                if(marker.view.model.get("currentlySpiderfied")){
+                    marker.setTitle(marker.view.getTitle("single"));
+                }else{
+                    marker.setTitle(marker.view.getTitle("multiple"));
+                }
+                var firstMember = marker.view.model;
+                if (!firstMember.get("groupID")) {
+                    firstMember.set("groupID", groupID);
+                    var firstMemberSeverity = firstMember.get('severity');
+                    var firstMemberOpacity = firstMember.get("locationAccuracy") == 1 ? 'opaque' : 1;
+                    groupsData.push({severity: firstMemberSeverity, opacity: firstMemberOpacity});
 
                     _.each(this.oms.markersNearMarker(marker), function (markerNear) {
                         var markerNearModel = markerNear.view.model;
                         markerNearModel.set("groupID", groupID);
-                        if ((groupHeadSeverity != markerNearModel.get('severity'))) {
+                        if ((firstMemberSeverity != markerNearModel.get('severity'))) {
                             groupsData[groupsData.length - 1].severity = SEVERITY_VARIOUS;
                         }
                         if (groupsData[groupsData.length - 1].opacity != 'opaque') {
@@ -282,13 +295,9 @@ $(function () {
                 }
             },this);
 
-            // Set icon only for group heads (optional: add number of accident in title)
-            var groups = _.groupBy(this.oms.markersNearAnyOtherMarker(), function(marker){ return marker.view.model.get("groupID")});
-            var groupHeads = _.map(groups, _.first);
-            _.each(groupHeads, function(groupHead){groupHead.title = groupHead.view.getTitle("multiple")});
-
             this.groupsData = groupsData;
-              // agam
+
+                          // agam
             if(tourLocation == 5) {
                 var myLatlng = new google.maps.LatLng(32.09170,34.86435);
                 var location1 = new google.maps.Marker({
@@ -523,10 +532,15 @@ $(function () {
             this.router = new AppRouter();
             Backbone.history.start({pushState: true});
             console.log('Loaded AppRouter');
+
             $('#toggle-sidebar').click(function () {
                 $('.main').toggleClass('main-open').toggleClass('main-close');
                 $('.sidebar-container').toggleClass('sidebar-container-open').toggleClass('sidebar-container-close');
-            });
+                
+                setTimeout(function() {
+                    google.maps.event.trigger(this.map, 'resize');
+                }.bind(this), 500);
+            }.bind(this));
             this.isReady = true;
             google.maps.event.addListener(this.map, "rightclick", _.bind(this.contextMenuMap, this) );
             google.maps.event.addListener(this.map, "idle", function(){
@@ -797,11 +811,11 @@ $(function () {
         },
         getCurrentUrlParams: function () {
             var params = this.buildMarkersParams(true);
-            var returnParams = '';
+            var returnParams = [];
             $.each(params, function(attr, attr_value) {
-                returnParams += "&" + attr + "=" + attr_value;
+                returnParams.push(attr + "=" + attr_value);
             });
-            return returnParams;
+            return returnParams.join("&");
 		},
         ESCinfoWindow: function(event) {
             if (event.keyCode == 27) {

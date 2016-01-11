@@ -9,7 +9,7 @@ from flask import make_response, render_template, Response, jsonify, url_for, fl
 import flask.ext.assets
 from webassets.ext.jinja2 import AssetsExtension
 from webassets import Environment as AssetsEnvironment
-from flask.ext.babel import Babel,gettext,ngettext
+from flask.ext.babel import Babel,gettext
 from clusters_calculator import retrieve_clusters
 
 from database import db_session
@@ -34,6 +34,7 @@ from sqlalchemy import distinct, func
 from apscheduler.scheduler import Scheduler
 import united
 from flask.ext.compress import Compress
+import argparse
 
 app = utilities.init_flask(__name__)
 db = SQLAlchemy(app)
@@ -107,12 +108,20 @@ def generate_csv(results):
         yield output_file.getvalue()
         output_file.truncate(0)
 
-ARG_TYPES = {'ne_lat': float, 'ne_lng': float, 'sw_lat': float, 'sw_lng': float, 'zoom': int, 'show_fatal': bool,
-             'show_severe': bool, 'show_light': bool, 'approx': bool, 'accurate': bool, 'show_markers': bool,
-             'show_discussions': bool, 'show_urban': int, 'show_intersection': int, 'show_lane': int,
-             'show_day': int, 'show_holiday': int, 'show_time': int, 'start_time': int, 'end_time': int,
-             'weather': int, 'road': int, 'separation': int, 'surface': int, 'acctype': int, 'controlmeasure': int,
-             'district': int, 'case_type': int}
+ARG_TYPES = {'ne_lat': (float, 32.072427482938345), 'ne_lng': (float, 34.79928962966915),
+             'sw_lat': (float, 34.79928962966915), 'sw_lng': (float, 34.78877537033077), 'zoom': (int, 17),
+             'show_fatal': (bool, True), 'show_severe': (bool, True), 'show_light': (bool, True),
+             'approx': (bool, True), 'accurate': (bool, True), 'show_markers': (bool, True),
+             'show_discussions': (bool, True), 'show_urban': (int, 3), 'show_intersection': (int, 3),
+             'show_lane': (int, 3), 'show_day': (int, 0), 'show_holiday': (int, 0),  'show_time': (int, 24),
+             'start_time': (int, 25), 'end_time': (int, 25), 'weather': (int, 0), 'road': (int, 0),
+             'separation': (int, 0), 'surface': (int, 0), 'acctype': (int, 0), 'controlmeasure': (int, 0),
+             'district': (int, 0), 'case_type': (int, 0)}
+
+def get_kwargs():
+    kwargs = {arg: arg_type(request.values.get(arg, default_value)) for (arg, (arg_type, default_value)) in ARG_TYPES.iteritems()}
+    kwargs.update({arg: datetime.date.fromtimestamp(int(request.values[arg])) for arg in ('start_date', 'end_date')})
+    return kwargs
 
 @babel.localeselector
 def get_locale():
@@ -126,10 +135,7 @@ def get_locale():
 @user_optional
 def markers():
     logging.debug('getting markers')
-
-    kwargs = {arg: arg_type(request.values[arg]) for (arg, arg_type) in ARG_TYPES.iteritems()}
-    kwargs.update({arg: datetime.date.fromtimestamp(int(request.values[arg])) for arg in ('start_date', 'end_date')})
-
+    kwargs = get_kwargs()
     logging.debug('querying markers in bounding box')
     is_thin = (kwargs['zoom'] < MINIMAL_ZOOM)
     accidents = Marker.bounding_box_query(is_thin, yield_per=50, **kwargs)
@@ -202,6 +208,7 @@ def discussion():
         if marker is None:
             log_bad_request(request)
             return make_response("")
+        logging.debug("Created new discussion with id=%d" % marker.id)
         return make_response(post_handler(marker))
 
 
@@ -210,9 +217,7 @@ def discussion():
 def clusters(methods=["GET"]):
     start_time = time.time()
     if request.method == "GET":
-        kwargs = {arg: arg_type(request.values[arg]) for (arg, arg_type) in ARG_TYPES.iteritems()}
-        kwargs.update({arg: datetime.date.fromtimestamp(int(request.values[arg])) for arg in ('start_date', 'end_date')})
-
+        kwargs = get_kwargs()
         results = retrieve_clusters(**kwargs)
 
         logging.debug('calculating clusters took %f seconds' % (time.time() - start_time))
@@ -557,7 +562,7 @@ lms_dictionary = {}
 @app.before_first_request
 def read_dictionaries():
     global lms_dictionary
-    for directory in glob.glob("{0}/{1}/*/*".format(app.static_folder, 'data/lms')):
+    for directory in sorted(glob.glob("{0}/{1}/*/*".format(app.static_folder, 'data/lms')),reverse=True):
         main_dict = dict(get_dict_file(directory))
         if len(main_dict) == 0:
             return
@@ -575,7 +580,7 @@ def get_dict_file(directory):
         files = filter(lambda path: filename.lower() in path.lower(), os.listdir(directory))
         amount = len(files)
         if amount == 0:
-            raise ValueError("file not found in directory: " + filename)
+            raise ValueError("file not found: " + filename + " in directory " + directory)
         if amount > 1:
             raise ValueError("there are too many matches: " + filename)
         csv = CsvReader(os.path.join(directory, files[0]))
@@ -649,6 +654,10 @@ def create_years_list():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--open', action='store_true', help='Open broadcasting to all local IPs')
+    args = parser.parse_args()
+
     sched = Scheduler()
 
     @sched.interval_schedule(hours=12)
@@ -657,4 +666,8 @@ if __name__ == "__main__":
     sched.start()
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
-    app.run(debug=True)
+
+    if not args.open:
+        app.run(debug=True)
+    else:
+        app.run(debug=True, host='0.0.0.0')
